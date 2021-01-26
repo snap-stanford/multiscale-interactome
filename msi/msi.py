@@ -2,8 +2,8 @@ from .node_to_node import NodeToNode
 from .drug_to_protein import DrugToProtein
 from .indication_to_protein import IndicationToProtein
 from .protein_to_protein import ProteinToProtein
-from .protein_to_functional_pathway import ProteinToFunctionalPathway
-from .functional_pathway_to_functional_pathway import FunctionalPathwayToFunctionalPathway
+from .protein_to_biological_function import ProteinToBiologicalFunction
+from .biological_function_to_biological_function import BiologicalFunctionToBiologicalFunction
 
 import networkx as nx
 import pandas as pd
@@ -14,19 +14,19 @@ import pickle
 DRUG = "drug"
 INDICATION = "indication"
 PROTEIN = "protein"
-FUNCTIONAL_PATHWAY = "functional_pathway"
-UP_FUNCTIONAL_PATHWAY = "up_functional_pathway"
-DOWN_FUNCTIONAL_PATHWAY = "down_functional_pathway"
+BIOLOGICAL_FUNCTION = "biological_function"
+UP_BIOLOGICAL_FUNCTION = "up_biological_function"
+DOWN_BIOLOGICAL_FUNCTION = "down_biological_function"
 WEIGHT = "weight"
 
 DRUG_PROTEIN = "drug-protein"
 INDICATION_PROTEIN = "indication-protein"
 PROTEIN_PROTEIN = "protein-protein"
-PROTEIN_FUNCTIONAL_PATHWAY = "protein-functional_pathway"
-FUNCTIONAL_PATHWAY_FUNCTIONAL_PATHWAY = "functional_pathway-functional_pathway"
+PROTEIN_BIOLOGICAL_FUNCTION = "protein-biological_function"
+BIOLOGICAL_FUNCTION_BIOLOGICAL_FUNCTION = "biological_function-biological_function"
 
 class MSI():
-	def __init__(self, nodes = [DRUG, INDICATION, PROTEIN, FUNCTIONAL_PATHWAY], edges = [DRUG_PROTEIN, INDICATION_PROTEIN, PROTEIN_PROTEIN, PROTEIN_FUNCTIONAL_PATHWAY, FUNCTIONAL_PATHWAY_FUNCTIONAL_PATHWAY], drug2protein_file_path = "data/drug_to_protein.tsv", drug2protein_directed = False, indication2protein_file_path = "data/indication_to_protein.tsv", indication2protein_directed = False, protein2protein_file_path = "data/protein_to_protein.tsv", protein2protein_directed = False, protein2functional_pathway_file_path = "data/protein_to_functional_pathway.tsv", protein2functional_pathway_directed = False, functional_pathway2functional_pathway_file_path = "data/functional_pathway_to_functional_pathway.tsv", functional_pathway2functional_pathway_directed = True):
+	def __init__(self, nodes = [DRUG, INDICATION, PROTEIN, BIOLOGICAL_FUNCTION], edges = [DRUG_PROTEIN, INDICATION_PROTEIN, PROTEIN_PROTEIN, PROTEIN_BIOLOGICAL_FUNCTION, BIOLOGICAL_FUNCTION_BIOLOGICAL_FUNCTION], drug2protein_file_path = "data/1_drug_to_protein.tsv", drug2protein_directed = False, indication2protein_file_path = "data/2_indication_to_protein.tsv", indication2protein_directed = False, protein2protein_file_path = "data/3_protein_to_protein.tsv", protein2protein_directed = False, protein2biological_function_file_path = "data/4_protein_to_biological_function.tsv", protein2biological_function_directed = False, biological_function2biological_function_file_path = "data/5_biological_function_to_biological_function.tsv", biological_function2biological_function_directed = True):
 		# Parameters
 		self.nodes = nodes
 		self.edges = edges
@@ -35,15 +35,15 @@ class MSI():
 		self.drug2protein_file_path = drug2protein_file_path
 		self.indication2protein_file_path = indication2protein_file_path
 		self.protein2protein_file_path = protein2protein_file_path
-		self.protein2functional_pathway_file_path = protein2functional_pathway_file_path
-		self.functional_pathway2functional_pathway_file_path = functional_pathway2functional_pathway_file_path
+		self.protein2biological_function_file_path = protein2biological_function_file_path
+		self.biological_function2biological_function_file_path = biological_function2biological_function_file_path
 
 		# Directed
 		self.drug2protein_directed = drug2protein_directed
 		self.indication2protein_directed = indication2protein_directed
 		self.protein2protein_directed = protein2protein_directed
-		self.protein2functional_pathway_directed = protein2functional_pathway_directed
-		self.functional_pathway2functional_pathway_directed = functional_pathway2functional_pathway_directed
+		self.protein2biological_function_directed = protein2biological_function_directed
+		self.biological_function2biological_function_directed = biological_function2biological_function_directed
 
 	def add_edges(self, edge_list, from_node_type, to_node_type):
 		for from_node, to_node in edge_list:
@@ -107,13 +107,13 @@ class MSI():
 			self.components["protein_to_protein"] = ProteinToProtein(self.protein2protein_directed, self.protein2protein_file_path)
 			self.add_edges(self.components["protein_to_protein"].edge_list, PROTEIN, PROTEIN)
 
-		if (FUNCTIONAL_PATHWAY in self.nodes) and (PROTEIN_FUNCTIONAL_PATHWAY in self.edges):
-			self.components["protein_to_functional_pathway"] = ProteinToFunctionalPathway(self.protein2functional_pathway_directed, self.protein2functional_pathway_file_path)
-			self.add_edges(self.components["protein_to_functional_pathway"].edge_list, PROTEIN, FUNCTIONAL_PATHWAY)
+		if (BIOLOGICAL_FUNCTION in self.nodes) and (PROTEIN_BIOLOGICAL_FUNCTION in self.edges):
+			self.components["protein_to_biological_function"] = ProteinToBiologicalFunction(self.protein2biological_function_directed, self.protein2biological_function_file_path)
+			self.add_edges(self.components["protein_to_biological_function"].edge_list, PROTEIN, BIOLOGICAL_FUNCTION)
 
-		if (FUNCTIONAL_PATHWAY in self.nodes) and (FUNCTIONAL_PATHWAY_FUNCTIONAL_PATHWAY in self.edges):
-			self.components["functional_pathway_to_functional_pathway"] = FunctionalPathwayToFunctionalPathway(self.functional_pathway2functional_pathway_directed, self.functional_pathway2functional_pathway_file_path)
-			self.add_edges(self.components["functional_pathway_to_functional_pathway"].edge_list, FUNCTIONAL_PATHWAY, FUNCTIONAL_PATHWAY)
+		if (BIOLOGICAL_FUNCTION in self.nodes) and (BIOLOGICAL_FUNCTION_BIOLOGICAL_FUNCTION in self.edges):
+			self.components["biological_function_to_biological_function"] = BiologicalFunctionToBiologicalFunction(self.biological_function2biological_function_directed, self.biological_function2biological_function_file_path)
+			self.add_edges(self.components["biological_function_to_biological_function"].edge_list, BIOLOGICAL_FUNCTION, BIOLOGICAL_FUNCTION)
 
 		# Make graph directional (copy forward and reverse of each edge)
 		self.graph = self.graph.to_directed()
@@ -199,18 +199,18 @@ class MSI():
 		self.cs_adj_dict = {node: {} for node in self.graph.nodes()}
 		for node in self.graph.nodes():
 			node_type = self.node2type[node]
-			if node_type == FUNCTIONAL_PATHWAY:
-				up_neighbors = list(self.components["functional_pathway_to_functional_pathway"].graph.successors(node))
-				down_neighbors = list(self.components["functional_pathway_to_functional_pathway"].graph.predecessors(node))
+			if node_type == BIOLOGICAL_FUNCTION:
+				up_neighbors = list(self.components["biological_function_to_biological_function"].graph.successors(node))
+				down_neighbors = list(self.components["biological_function_to_biological_function"].graph.predecessors(node))
 
 			successors = self.graph.successors(node)
 			for successor in successors:
 				successor_type = self.node2type[successor]
-				if (node_type == FUNCTIONAL_PATHWAY) and (successor_type == FUNCTIONAL_PATHWAY):
+				if (node_type == BIOLOGICAL_FUNCTION) and (successor_type == BIOLOGICAL_FUNCTION):
 					if successor in up_neighbors:
-						self.add_to_cs_adj_dict(node, UP_FUNCTIONAL_PATHWAY, successor)
+						self.add_to_cs_adj_dict(node, UP_BIOLOGICAL_FUNCTION, successor)
 					elif successor in down_neighbors:
-						self.add_to_cs_adj_dict(node, DOWN_FUNCTIONAL_PATHWAY, successor)
+						self.add_to_cs_adj_dict(node, DOWN_BIOLOGICAL_FUNCTION, successor)
 					else:
 						assert(False)
 				else:
